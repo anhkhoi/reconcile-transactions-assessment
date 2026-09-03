@@ -39,7 +39,7 @@ current phase state must always be visible in the table below.
 | 1. Quality guardrails | Complete | The phase's **Done when** criteria pass. |
 | 2. Bootstrap | Complete | The phase's **Done when** criteria pass. |
 | 3. Persist domain | Complete | The phase's **Done when** criteria pass. |
-| 4. Reconcile and store outcomes | Not started | The phase's **Done when** criteria pass. |
+| 4. Reconcile and store outcomes | Complete | The phase's **Done when** criteria pass. |
 | 5. API contract | Not started | The phase's **Done when** criteria pass. |
 | 6. Postman assets | Not started | The phase's **Done when** criteria pass. |
 | 7. Tests and generated-code review | Not started | The phase's **Done when** criteria pass. |
@@ -260,8 +260,24 @@ Implementation sequence:
 **Done when:** a service-level test proves all four statuses, Decimal equality,
 and no partial records after a failed upload.
 
-**Phase notes:** Add the commands run, result, and any unresolved follow-up
-here before marking Phase 4 complete.
+**Phase notes:** Complete on 2026-09-04.
+
+- Added a service-layer UTF-8 CSV parser that requires the documented header,
+  validates and normalizes every row into in-memory `Decimal` input values,
+  and produces client-safe, row-specific validation errors.
+- Added transactional payout import that batch-loads source-of-truth orders,
+  persists each payout and one reconciliation result, and applies the documented
+  precedence: missing order, currency mismatch, amount mismatch, then matched.
+  Re-uploads intentionally create additional payout records.
+- `.venv/bin/python manage.py makemigrations --check` reported no changes,
+  `.venv/bin/python manage.py check` completed with no issues, and
+  `.venv/bin/python manage.py test reconciliation` passed all 15 tests.
+  Coverage includes the supplied four outcomes, Decimal equality, precedence,
+  invalid header/error handling, re-upload behavior, and no partial records
+  after an invalid row.
+- The Django reconciliation verifier found no blocking or important Phase 4
+  issues. HTTP upload-size/content-type checks and HTTP error mapping remain
+  intentionally scoped to Phase 5.
 
 ### 5. Implement the API contract
 
