@@ -1,0 +1,4 @@
+interface:
+  display_name: "Django Reconciliation Verifier"
+  short_description: "Review a Django reconciliation change"
+  default_prompt: "Use $django-reconciliation-verifier to review the current payout-reconciliation changes."
