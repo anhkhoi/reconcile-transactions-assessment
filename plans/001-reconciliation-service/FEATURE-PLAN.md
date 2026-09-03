@@ -40,7 +40,7 @@ current phase state must always be visible in the table below.
 | 2. Bootstrap | Complete | The phase's **Done when** criteria pass. |
 | 3. Persist domain | Complete | The phase's **Done when** criteria pass. |
 | 4. Reconcile and store outcomes | Complete | The phase's **Done when** criteria pass. |
-| 5. API contract | Not started | The phase's **Done when** criteria pass. |
+| 5. API contract | Complete | The phase's **Done when** criteria pass. |
 | 6. Postman assets | Not started | The phase's **Done when** criteria pass. |
 | 7. Tests and generated-code review | Not started | The phase's **Done when** criteria pass. |
 | 8. Documentation and production design | Not started | The phase's **Done when** criteria pass. |
@@ -314,8 +314,28 @@ returned.
 `400`, and a results read that retrieves the stored statuses without invoking
 new reconciliation work.
 
-**Phase notes:** Add the commands run, result, and any unresolved follow-up
-here before marking Phase 5 complete.
+**Phase notes:** Complete on 2026-09-04.
+
+- Added `POST /api/payouts/upload`, using multipart `file` input, local upload
+  size and supplied content-type validation, and client-safe `400` responses
+  for service-level CSV errors. A successful import returns `201` with only
+  `{"imported_count": <count>}`.
+- Added `GET /api/reconciliation`, which uses `select_related` and a stable
+  order-number/result-id ordering to serialize only persisted `order_number`
+  and `status` values; it does not rerun reconciliation.
+- Added API tests for valid multipart upload, invalid row and empty upload
+  errors with no writes, rejected non-CSV content type and oversized file, and
+  persisted/stably ordered results after the source order changes.
+- `.venv/bin/python manage.py makemigrations --check` reported no changes,
+  `.venv/bin/python manage.py check` completed with no issues, and
+  `.venv/bin/python manage.py test reconciliation` passed all 21 tests.
+- Ran the local server after `seed_orders`. `curl` upload of
+  `requirements/payouts.csv` returned `201 {"imported_count":9}`; uploading
+  `requirements/orders.csv` returned the expected header `400`; the final
+  results read returned 9 stored outcomes, including the four required sample
+  statuses. The temporary server was stopped after verification.
+- The Django reconciliation verifier found no blocking or important Phase 5
+  findings. Consumer Postman coverage remains intentionally scoped to Phase 6.
 
 ### 6. Create Postman assets
 
