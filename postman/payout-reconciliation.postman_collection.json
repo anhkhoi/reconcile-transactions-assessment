@@ -1,0 +1,85 @@
+{
+  "info": {
+    "_postman_id": "f35978a4-fc21-4535-93c7-18efca2eaab7",
+    "name": "Payout Reconciliation Service",
+    "description": "Run `python manage.py seed_orders` before sending the upload request. The file field targets postman/payouts.csv; select that file manually after import if Postman does not resolve the repository-relative path.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "item": [
+    {
+      "name": "Upload payouts CSV",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test(\"returns 201 Created\", function () {",
+              "    pm.response.to.have.status(201);",
+              "});",
+              "",
+              "pm.test(\"imports nine payout records\", function () {",
+              "    pm.expect(pm.response.json()).to.deep.equal({ imported_count: 9 });",
+              "});"
+            ]
+          }
+        }
+      ],
+      "request": {
+        "method": "POST",
+        "body": {
+          "mode": "formdata",
+          "formdata": [
+            {
+              "key": "file",
+              "type": "file",
+              "src": "postman/payouts.csv"
+            }
+          ]
+        },
+        "url": "{{baseUrl}}/api/payouts/upload",
+        "description": "Upload the supplied payout sample as multipart form-data using the file key."
+      },
+      "response": []
+    },
+    {
+      "name": "Get reconciliation results",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test(\"returns 200 OK\", function () {",
+              "    pm.response.to.have.status(200);",
+              "});",
+              "",
+              "pm.test(\"returns the required persisted reconciliation outcomes\", function () {",
+              "    const results = pm.response.json();",
+              "    const expectedStatuses = {",
+              "        \"100003\": \"Amount Mismatch\",",
+              "        \"100009\": \"Currency Mismatch\",",
+              "        \"100011\": \"Missing Order\",",
+              "        \"100012\": \"Missing Order\"",
+              "    };",
+              "",
+              "    pm.expect(results).to.be.an(\"array\");",
+              "    Object.entries(expectedStatuses).forEach(([orderNumber, expectedStatus]) => {",
+              "        const result = results.find((item) => item.order_number === orderNumber);",
+              "        pm.expect(result, `result for order ${orderNumber}`).to.exist;",
+              "        pm.expect(result.status).to.equal(expectedStatus);",
+              "    });",
+              "});"
+            ]
+          }
+        }
+      ],
+      "request": {
+        "method": "GET",
+        "url": "{{baseUrl}}/api/reconciliation",
+        "description": "Read the persisted reconciliation outcomes created by the upload request."
+      },
+      "response": []
+    }
+  ]
+}

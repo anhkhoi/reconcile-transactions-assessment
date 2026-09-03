@@ -41,7 +41,7 @@ current phase state must always be visible in the table below.
 | 3. Persist domain | Complete | The phase's **Done when** criteria pass. |
 | 4. Reconcile and store outcomes | Complete | The phase's **Done when** criteria pass. |
 | 5. API contract | Complete | The phase's **Done when** criteria pass. |
-| 6. Postman assets | Not started | The phase's **Done when** criteria pass. |
+| 6. Postman assets | Complete | The phase's **Done when** criteria pass. |
 | 7. Tests and generated-code review | Not started | The phase's **Done when** criteria pass. |
 | 8. Documentation and production design | Not started | The phase's **Done when** criteria pass. |
 
@@ -359,8 +359,22 @@ Collection execution order:
 **Done when:** a fresh machine can import the collection and environment, make
 these requests against the local server, and receive passing assertions.
 
-**Phase notes:** Add the commands run, result, and any unresolved follow-up
-here before marking Phase 6 complete.
+**Phase notes:** Complete on 2026-09-04.
+
+- Added a Postman v2.1 collection with multipart **Upload payouts CSV** and
+  **Get reconciliation results** requests, a local environment with `baseUrl`,
+  and the supplied payout sample copied to `postman/payouts.csv`. The upload
+  request references that repository-relative file and explains the manual
+  selection fallback for Postman clients that cannot resolve it.
+- Collection assertions require `201` and `imported_count: 9`, then `200` and
+  the four required order-number/status pairs.
+- Parsed both Postman JSON assets with Node and confirmed
+  `postman/payouts.csv` is identical to `requirements/payouts.csv`.
+- Started the local service after `seed_orders` and ran
+  `npx -y newman@6.2.1 run postman/payout-reconciliation.postman_collection.json
+  -e postman/payout-reconciliation.local.postman_environment.json`. The run
+  completed 2 requests and 4 assertions with 0 failures. The temporary server
+  was stopped after verification.
 
 ### 7. Test the service and review generated code
 

@@ -1,0 +1,10 @@
+provider,order_number,amount,currency
+Stripe,100001,125.00,USD
+Stripe,100002,89.99,USD
+Stripe,100003,250.50,USD
+Stripe,100004,45.00,USD
+Stripe,100006,60.00,USD
+Stripe,100008,99.95,USD
+Stripe,100009,18.50,CAD
+Stripe,100011,75.00,USD
+Stripe,100012,120.00,USD
