@@ -37,7 +37,7 @@ current phase state must always be visible in the table below.
 | Phase | Status | Mark complete only after |
 | --- | --- | --- |
 | 1. Quality guardrails | Complete | The phase's **Done when** criteria pass. |
-| 2. Bootstrap | Not started | The phase's **Done when** criteria pass. |
+| 2. Bootstrap | Complete | The phase's **Done when** criteria pass. |
 | 3. Persist domain | Not started | The phase's **Done when** criteria pass. |
 | 4. Reconcile and store outcomes | Not started | The phase's **Done when** criteria pass. |
 | 5. API contract | Not started | The phase's **Done when** criteria pass. |
@@ -159,8 +159,21 @@ postman/
 **Done when:** `python manage.py migrate` succeeds against a fresh SQLite
 database and Django's test runner discovers the app tests.
 
-**Phase notes:** Add the commands run, result, and any unresolved follow-up
-here before marking Phase 2 complete.
+**Phase notes:** Complete on 2026-09-04.
+
+- Added the Django project, `reconciliation` app skeleton, SQLite settings,
+  dependency manifest, local-only environment example, and ignored local state.
+- Installed Django 5.2.17 and Django REST Framework 3.16.1 into a local
+  ignored `.venv` from `requirements.txt`.
+- On a fresh `db.sqlite3`, `.venv/bin/python manage.py migrate` applied all
+  built-in Django migrations successfully.
+- `.venv/bin/python manage.py check` completed with no issues, and
+  `.venv/bin/python manage.py test reconciliation` discovered and passed two
+  bootstrap tests using Django's isolated test database.
+- The Django reconciliation verifier reviewed the scaffold. It identified a
+  production-secret fallback risk; settings now fail closed when debug is
+  disabled and `DJANGO_SECRET_KEY` is absent. No unresolved blocking or
+  important findings remain for this phase.
 
 ### 3. Persist the domain
 

@@ -6,7 +6,7 @@
 ._*
 
 # Custom folder icons
-Icon
+Icon
 
 # Volume root files
 .DocumentRevisions-V100
@@ -34,18 +34,28 @@ dist/
 
 # dotenv environment variable files
 .env
+.env.*
+!/.env.example
+uploads/
 
 # Virtual environments
-.venv
+.venv/
 env/
 venv/
 
+# Django local state
+db.sqlite3
+*.sqlite3
+media/
+staticfiles/
+
 # Unit test / coverage reports
+.coverage
+.coverage.*
+coverage.xml
 htmlcov/
 .tox/
 .nox/
-.coverage
-.coverage.*
 .pytest_cache/
 
 # Type checkers

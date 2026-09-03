@@ -3,7 +3,8 @@
 A Django and Django REST Framework assessment project for importing payout CSV
 files and reconciling them against orders. SQLite is the local database.
 
-> **Current status:** planning is complete; implementation has not started.
+> **Current status:** Phase 2 (application bootstrap) is complete; the domain,
+> reconciliation workflow, and API phases remain to be implemented.
 > The detailed delivery plan is in
 > [plans/001-reconciliation-service/FEATURE-PLAN.md](plans/001-reconciliation-service/FEATURE-PLAN.md).
 
