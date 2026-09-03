@@ -43,7 +43,7 @@ current phase state must always be visible in the table below.
 | 5. API contract | Complete | The phase's **Done when** criteria pass. |
 | 6. Postman assets | Complete | The phase's **Done when** criteria pass. |
 | 7. Tests and generated-code review | Complete | The phase's **Done when** criteria pass. |
-| 8. Documentation and production design | Not started | The phase's **Done when** criteria pass. |
+| 8. Documentation and production design | Complete | The phase's **Done when** criteria pass. |
 
 **Update rule:** before ending a work session, update the relevant status to
 `In progress`, `Blocked`, or `Complete`. A phase may be changed to `Complete`
@@ -448,8 +448,23 @@ The README will cover:
 **Done when:** the README gives a new reviewer enough information to set up,
 run, test, and assess the service and honestly records the validation evidence.
 
-**Phase notes:** Add the commands run, result, and any unresolved follow-up
-here before marking Phase 8 complete.
+**Phase notes:** Complete on 2026-09-04.
+
+- Replaced the planning-era README with setup, configuration, seed/server,
+  endpoint, testing, Postman, data-model, scaling, AWS, production-hardening,
+  validation, and AI-use documentation. It explicitly distinguishes the three
+  domain tables from Django infrastructure tables and explains that
+  `.env.example` is not auto-loaded.
+- Final checks: `.venv/bin/python manage.py makemigrations --check` reported
+  no changes; `.venv/bin/python manage.py check` reported no issues; and
+  `.venv/bin/python manage.py test reconciliation` created an isolated SQLite
+  test database and passed all 23 tests.
+- Parsed the Postman collection/environment JSON and confirmed the copied
+  Postman payout CSV matches the supplied source CSV. After `seed_orders`, ran
+  `npx -y newman@6.2.1 run postman/payout-reconciliation.postman_collection.json
+  -e postman/payout-reconciliation.local.postman_environment.json`; 2 requests
+  and 4 assertions passed with 0 failures. The temporary local server was
+  stopped after validation.
 
 ## Execution Order
 
