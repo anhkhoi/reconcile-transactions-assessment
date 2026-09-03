@@ -42,7 +42,7 @@ current phase state must always be visible in the table below.
 | 4. Reconcile and store outcomes | Complete | The phase's **Done when** criteria pass. |
 | 5. API contract | Complete | The phase's **Done when** criteria pass. |
 | 6. Postman assets | Complete | The phase's **Done when** criteria pass. |
-| 7. Tests and generated-code review | Not started | The phase's **Done when** criteria pass. |
+| 7. Tests and generated-code review | Complete | The phase's **Done when** criteria pass. |
 | 8. Documentation and production design | Not started | The phase's **Done when** criteria pass. |
 
 **Update rule:** before ending a work session, update the relevant status to
@@ -411,8 +411,23 @@ independent senior-engineer review. It must check:
 and report a clean pass, and the generated-code review has no unresolved
 high-severity correctness or security finding.
 
-**Phase notes:** Add the commands run, result, and any unresolved follow-up
-here before marking Phase 7 complete.
+**Phase notes:** Complete on 2026-09-04.
+
+- Added explicit API tests for a CSV row with a missing required value and for
+  a missing multipart `file`, both returning `400` without persisting payouts
+  or results. Existing model, service, API, and Postman tests cover the
+  remaining Phase 7 scenarios.
+- `.venv/bin/python manage.py makemigrations --check` reported no changes,
+  `.venv/bin/python manage.py check` completed with no issues, and
+  `.venv/bin/python manage.py test reconciliation` created an isolated test
+  SQLite database and passed all 23 tests.
+- Performed the independent Django reconciliation verifier review of models,
+  import service, serializers, views, URLs, and test inventory. **Blocking:**
+  none. **Important:** none. **Optional:** accept additional common CSV MIME
+  aliases only if a future client requires them. The review confirmed
+  Decimal-only money handling, source-of-truth order lookups, full-file
+  validation before atomic writes, status precedence, persisted read behavior,
+  upload controls, and regression coverage.
 
 ### 8. Document setup and production design
 

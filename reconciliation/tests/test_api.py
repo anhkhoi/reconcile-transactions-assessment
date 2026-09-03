@@ -42,6 +42,26 @@ class PayoutUploadApiTests(APITestCase):
         self.assertEqual(Payout.objects.count(), 0)
         self.assertEqual(ReconciliationResult.objects.count(), 0)
 
+    def test_missing_csv_value_returns_400_without_writing_data(self) -> None:
+        response = self._upload(
+            b"provider,order_number,amount,currency\nStripe,,125.00,USD\n"
+        )
+
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+        self.assertIn("Line 2: all fields are required.", response.data["file"])
+        self.assertEqual(Payout.objects.count(), 0)
+        self.assertEqual(ReconciliationResult.objects.count(), 0)
+
+    def test_missing_multipart_file_returns_400(self) -> None:
+        response = self.client.post(
+            reverse("payout-upload"),
+            {},
+            format="multipart",
+        )
+
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+        self.assertIn("No file was submitted.", response.data["file"])
+
     def test_non_csv_content_type_is_rejected(self) -> None:
         response = self._upload(b"not a CSV", content_type="application/pdf")
 
