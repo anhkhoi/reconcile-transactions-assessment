@@ -38,7 +38,7 @@ current phase state must always be visible in the table below.
 | --- | --- | --- |
 | 1. Quality guardrails | Complete | The phase's **Done when** criteria pass. |
 | 2. Bootstrap | Complete | The phase's **Done when** criteria pass. |
-| 3. Persist domain | Not started | The phase's **Done when** criteria pass. |
+| 3. Persist domain | Complete | The phase's **Done when** criteria pass. |
 | 4. Reconcile and store outcomes | Not started | The phase's **Done when** criteria pass. |
 | 5. API contract | Not started | The phase's **Done when** criteria pass. |
 | 6. Postman assets | Not started | The phase's **Done when** criteria pass. |
@@ -205,8 +205,24 @@ Decisions to make explicit in implementation:
 **Done when:** migrations describe the three models, the seed command imports
 the supplied ten orders, and model-level tests confirm key constraints.
 
-**Phase notes:** Add the commands run, result, and any unresolved follow-up
-here before marking Phase 3 complete.
+**Phase notes:** Complete on 2026-09-04.
+
+- Added `Order`, `Payout`, and one-to-one `ReconciliationResult` models with
+  fixed-precision `DecimalField` amounts, unique/indexed order lookup,
+  currency-shape validation, non-negative amount constraints, result statuses,
+  and result timestamps.
+- Added and applied `reconciliation.0001_initial` locally; Django reports no
+  pending model changes.
+- Added `seed_orders`, which parses the supplied CSV into `Decimal` values and
+  validates every row before atomically creating or updating source-of-truth
+  orders. Running it against `requirements/orders.csv` reported `Seeded 10
+  orders.` and confirmed a count of 10.
+- `.venv/bin/python manage.py check` completed with no issues, and
+  `.venv/bin/python manage.py test reconciliation` passed all 9 bootstrap,
+  model, and seed-command tests.
+- The Django reconciliation verifier found no blocking or important Phase 3
+  findings. Upload transaction behavior, reconciliation precedence, and API
+  read behavior remain intentionally scoped to Phases 4 and 5.
 
 ### 4. Reconcile and store outcomes
 
