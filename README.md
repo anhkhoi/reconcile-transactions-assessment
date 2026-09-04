@@ -4,6 +4,29 @@ A Django + Django REST Framework service that imports payout CSV rows,
 reconciles them against source-of-truth orders, stores each outcome, and exposes
 the persisted results. SQLite is the local development database.
 
+## Project structure
+
+```text
+.
+├── config/                         # Django settings and root URL/WSGI/ASGI configuration
+├── reconciliation/                 # Reconciliation application
+│   ├── management/commands/        # seed_orders management command
+│   ├── migrations/                 # Database schema migrations
+│   ├── tests/                      # Model, service, API, and bootstrap tests
+│   ├── models.py                   # Order, Payout, and ReconciliationResult models
+│   ├── serializers.py              # Upload validation and response serialization
+│   ├── services.py                 # CSV parsing, import, and reconciliation workflow
+│   ├── urls.py                     # Application API routes
+│   └── views.py                    # HTTP endpoint coordination
+├── requirements/                   # Supplied assessment brief and source CSV files
+├── postman/                        # Collection, local environment, sample CSV, and result screenshots
+├── plans/                          # Phased implementation plans and validation evidence
+├── .agents/                        # Repository rules and task-specific AI review skills
+├── manage.py                       # Django command entry point
+├── requirements.txt                # Python dependencies
+└── README.md                       # Setup, API, validation, and design documentation
+```
+
 ## Setup and run
 
 Prerequisite: Python 3.12 or newer.
