@@ -133,22 +133,78 @@ npx -y newman@6.2.1 run postman/payout-reconciliation.postman_collection.json \
 
 ## Scaling to 500,000 records
 
-The synchronous local SQLite flow is intentionally small. At 500,000 records,
-use asynchronous jobs and PostgreSQL.
+The synchronous SQLite implementation is intentionally scoped to small files.
+For imports of 500,000 records or more, move the import and reconciliation work
+to an asynchronous job architecture backed by PostgreSQL.
 
-| Concern | Production approach |
-| --- | --- |
-| File intake | Store files in S3 through pre-signed uploads; create an import record with checksum, owner, and idempotency key. |
-| Parsing | Stream CSV rows in chunks; validate chunks and retain per-row errors in an import report. |
-| Database work | Use PostgreSQL indexed order lookups, bounded `bulk_create` batches, and a staging table with `COPY`/set-based joins at higher throughput. |
-| Execution | Publish jobs through SQS or EventBridge and scale independent workers. |
-| Results API | Use cursor pagination, import filtering, tenant authorization, and indexed ordering. |
-| Reliability | Persist import states, idempotency keys, retry policy, dead-letter handling, and replay-safe result creation. |
+```text
+Client → request an upload URL from the API → upload the CSV directly to S3
+       → create an ImportJob → enqueue {import_job_id, s3_key} in SQS
+       → receive 202 Accepted
 
-Suitable AWS services: S3 for files; SQS or EventBridge for jobs; ECS/Fargate
-workers for long-running imports (Lambda for short bounded jobs); RDS PostgreSQL;
-CloudWatch for logs, metrics, and alarms; IAM for least privilege; and Secrets
-Manager for configuration secrets.
+Worker → receive the SQS message → stream the CSV from S3 in chunks
+       → validate and reconcile each chunk against indexed orders
+       → persist payouts and reconciliation results in PostgreSQL
+       → update the ImportJob status and progress
+```
+
+### Asynchronous import workflow
+
+```mermaid
+sequenceDiagram
+    autonumber
+    participant C as Client
+    participant A as Django API (ECS/Fargate)
+    participant S as Amazon S3
+    participant D as RDS PostgreSQL
+    participant Q as Amazon SQS
+    participant W as Import worker (ECS/Fargate)
+
+    C->>A: Request a pre-signed upload URL
+    A-->>C: Upload URL and s3_key
+    C->>S: Upload CSV directly
+    C->>A: POST /api/imports (s3_key, idempotency_key)
+    A->>D: Create ImportJob (QUEUED)
+    A->>Q: Send import_job_id and s3_key
+    A-->>C: 202 Accepted (import_job_id)
+
+    W->>Q: Receive message
+    W->>D: Set ImportJob to PROCESSING
+    W->>S: Stream CSV in chunks
+    W->>D: Persist staging rows, payouts, results, and progress
+    W->>D: Set job to SUCCEEDED, PARTIALLY_SUCCEEDED, or FAILED
+    W->>Q: Delete message after successful processing
+```
+
+### Reconciliation result retrieval
+
+The read path is deliberately separate from import processing. It reads the
+persisted status and never recalculates reconciliation. The current assessment
+endpoint is `GET /api/reconciliation`; `import_id` and cursor pagination are
+production extensions for large, multi-import datasets.
+
+```mermaid
+sequenceDiagram
+    participant C as Client
+    participant A as Django API (ECS/Fargate)
+    participant D as RDS PostgreSQL
+
+    C->>A: GET /api/reconciliation?import_id={id}&cursor=...
+    A->>D: Query persisted ReconciliationResults joined to Payouts
+    A-->>C: order_number and status records
+```
+
+### AWS service mapping
+
+| Component | AWS service | Responsibility |
+| --- | --- | --- |
+| Public API | ECS on Fargate + Application Load Balancer | Runs Django/DRF endpoints that issue upload URLs, create ImportJobs, and serve status and result APIs. |
+| CSV object storage | Amazon S3 | Stores original CSV files; clients upload directly using time-limited pre-signed URLs. |
+| Import metadata and reconciliation data | Amazon RDS for PostgreSQL | Stores ImportJobs, staged rows, Orders, Payouts, ReconciliationResults, and per-row errors. |
+| Work dispatch | Amazon SQS + dead-letter queue | Buffers lightweight job messages, decouples API from workers, retries failed deliveries, and isolates exhausted failures. |
+| Long-running processing | ECS on Fargate | Runs independently scalable workers that stream, validate, reconcile, and persist imports. |
+| Logs, metrics, and alerts | Amazon CloudWatch | Captures structured logs and monitors job failures, processing time, queue depth, and error rates. |
+| Secrets and access control | AWS Secrets Manager + IAM | Stores database secrets and grants each workload only the permissions it needs. |
 
 ## Production readiness
 
@@ -177,9 +233,42 @@ During implementation:
 - Newman completed 2 requests and 4 assertions with 0 failures.
 - The focused Django reconciliation review had no blocking or important findings.
 
-## AI usage disclosure
+## AI Usage
 
-AI assistance (Codex) helped plan, scaffold, implement, test, review, and
-document this assessment. The resulting work was checked against repository
-rules, exercised with Django tests and local HTTP/Postman runs, and reviewed for
-domain correctness, transactional behavior, validation, and security concerns.
+OpenAI Codex and Anthropic Claude were used as AI coding assistants for
+planning, implementation, test generation, code review, and documentation.
+Their output followed a repository-defined process rather than being accepted
+unreviewed:
+
+- Before implementation, Codex read the repository instructions and the
+  reviewer-visible domain, Django, security, validation, and engineering rules
+  in `.agents/rules/`.
+- The `plans/` directory is a reusable planning system: each feature, bug fix,
+  refactor, or investigation receives its own numbered plan. A plan is divided
+  into phases with scope, dependencies, decisions, acceptance criteria, status,
+  and validation evidence. For this assessment, the plan is
+  `plans/001-reconciliation-service/FEATURE-PLAN.md`.
+- This plan was the working context shared with Codex. It provided an overview
+  of the work, structured the implementation order, tracked completed and
+  remaining phases, and made it possible to pause and resume work days later
+  without losing technical decisions, progress, or validation context.
+- Codex helped generate the Django project, domain models, CSV import and
+  reconciliation service, API endpoints, tests, Postman assets, and README
+  documentation. The implementation owner reviewed the generated changes and
+  made the final design and acceptance decisions.
+- For repeatable, task-specific work, repository-scoped skills are created to
+  guide AI execution and review generated code. For this service, the
+  `django-reconciliation-verifier` skill checked source-of-truth order lookups,
+  `Decimal` money handling, atomic full-file validation, reconciliation
+  precedence, persisted read behavior, upload safety, and regression coverage.
+
+The AI review skill was supplemented by authored and executable automated tests
+at the model, service, and API layers, so generated code was checked by both
+review guidance and repeatable behavior tests. Validation included `python
+manage.py migrate` on a fresh local SQLite database, `python manage.py
+makemigrations --check`, `python manage.py check`, and `python manage.py test
+reconciliation` (23 passing tests). The service was also exercised through
+local HTTP smoke tests and a Newman run of the Postman collection (2 requests
+and 4 assertions, all passing). These checks verified the required sample
+outcomes, transactional failure behavior, API contracts, and persisted
+reconciliation results.
